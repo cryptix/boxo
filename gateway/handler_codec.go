@@ -16,8 +16,6 @@ import (
 	"github.com/ipld/go-ipld-prime/multicodec"
 	"github.com/ipld/go-ipld-prime/node/basicnode"
 	mc "github.com/multiformats/go-multicodec"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	// Ensure basic codecs are registered.
 	_ "github.com/ipld/go-ipld-prime/codec/cbor"
@@ -59,8 +57,6 @@ var contentTypeToExtension = map[string]string{
 }
 
 func (i *handler) serveCodec(ctx context.Context, w http.ResponseWriter, r *http.Request, rq *requestData) bool {
-	ctx, span := spanTrace(ctx, "Handler.ServeCodec", trace.WithAttributes(attribute.String("path", rq.immutablePath.String()), attribute.String("requestedContentType", rq.responseFormat)))
-	defer span.End()
 
 	pathMetadata, data, err := i.backend.GetBlock(ctx, rq.mostlyResolvedPath())
 	if !i.handleRequestErrors(w, r, rq.contentPath, err) {
@@ -80,8 +76,6 @@ func (i *handler) serveCodec(ctx context.Context, w http.ResponseWriter, r *http
 
 func (i *handler) renderCodec(ctx context.Context, w http.ResponseWriter, r *http.Request, rq *requestData, blockSize int64, blockData io.ReadSeekCloser) bool {
 	resolvedPath := rq.pathMetadata.LastSegment
-	ctx, span := spanTrace(ctx, "Handler.RenderCodec", trace.WithAttributes(attribute.String("path", resolvedPath.String()), attribute.String("requestedContentType", rq.responseFormat)))
-	defer span.End()
 
 	blockCid := resolvedPath.RootCid()
 	cidCodec := mc.Code(blockCid.Prefix().Codec)

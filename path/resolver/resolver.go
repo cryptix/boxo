@@ -6,10 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
-
 	"github.com/ipfs/boxo/fetcher"
 	fetcherhelpers "github.com/ipfs/boxo/fetcher/helpers"
 	"github.com/ipfs/boxo/path"
@@ -78,8 +74,6 @@ func NewBasicResolver(factory fetcher.Factory) Resolver {
 
 // ResolveToLastNode implements [Resolver.ResolveToLastNode].
 func (r *basicResolver) ResolveToLastNode(ctx context.Context, fpath path.ImmutablePath) (cid.Cid, []string, error) {
-	ctx, span := startSpan(ctx, "basicResolver.ResolveToLastNode", trace.WithAttributes(attribute.Stringer("Path", fpath)))
-	defer span.End()
 
 	c, remainder := fpath.RootCid(), fpath.Segments()[2:]
 
@@ -143,8 +137,6 @@ func (r *basicResolver) ResolveToLastNode(ctx context.Context, fpath path.Immuta
 // Note: if/when the context is cancelled or expires then if a multi-block ADL
 // node is returned then it may not be possible to load certain values.
 func (r *basicResolver) ResolvePath(ctx context.Context, fpath path.ImmutablePath) (ipld.Node, ipld.Link, error) {
-	ctx, span := startSpan(ctx, "basicResolver.ResolvePath", trace.WithAttributes(attribute.Stringer("Path", fpath)))
-	defer span.End()
 
 	c, remainder := fpath.RootCid(), fpath.Segments()[2:]
 
@@ -166,8 +158,6 @@ func (r *basicResolver) ResolvePath(ctx context.Context, fpath path.ImmutablePat
 // Note: if/when the context is cancelled or expires then if a multi-block ADL
 // node is returned then it may not be possible to load certain values.
 func (r *basicResolver) ResolvePathComponents(ctx context.Context, fpath path.ImmutablePath) (nodes []ipld.Node, err error) {
-	ctx, span := startSpan(ctx, "basicResolver.ResolvePathComponents", trace.WithAttributes(attribute.Stringer("Path", fpath)))
-	defer span.End()
 
 	defer log.Debugw("resolvePathComponents", "fpath", fpath, "error", err)
 
@@ -183,8 +173,7 @@ func (r *basicResolver) ResolvePathComponents(ctx context.Context, fpath path.Im
 // Finds nodes matching the selector starting with a cid. Returns the matched nodes, the cid of the block containing
 // the last node, and the depth of the last node within its block (root is depth 0).
 func (r *basicResolver) resolveNodes(ctx context.Context, c cid.Cid, sel ipld.Node) ([]ipld.Node, cid.Cid, int, error) {
-	ctx, span := startSpan(ctx, "basicResolver.resolveNodes", trace.WithAttributes(attribute.Stringer("CID", c)))
-	defer span.End()
+
 	session := r.FetcherFactory.NewSession(ctx)
 
 	// traverse selector
@@ -241,8 +230,4 @@ func pathSelector(path []string, ssb builder.SelectorSpecBuilder, reduce func(st
 		spec = reduce(path[i], spec)
 	}
 	return spec.Node()
-}
-
-func startSpan(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
-	return otel.Tracer("boxo/path/resolver").Start(ctx, "Path."+name, opts...)
 }

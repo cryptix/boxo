@@ -18,7 +18,6 @@ import (
 	bssim "github.com/ipfs/boxo/bitswap/client/internal/sessioninterestmanager"
 	bssm "github.com/ipfs/boxo/bitswap/client/internal/sessionmanager"
 	bsspm "github.com/ipfs/boxo/bitswap/client/internal/sessionpeermanager"
-	"github.com/ipfs/boxo/bitswap/internal"
 	"github.com/ipfs/boxo/bitswap/internal/defaults"
 	bsmsg "github.com/ipfs/boxo/bitswap/message"
 	bmetrics "github.com/ipfs/boxo/bitswap/metrics"
@@ -34,8 +33,6 @@ import (
 	process "github.com/jbenet/goprocess"
 	procctx "github.com/jbenet/goprocess/context"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 var log = logging.Logger("bitswap-client")
@@ -263,8 +260,7 @@ type counters struct {
 // deadline enforced by the context.
 // It returns a [github.com/ipfs/boxo/bitswap/client/traceability.Block] assertable [blocks.Block].
 func (bs *Client) GetBlock(ctx context.Context, k cid.Cid) (blocks.Block, error) {
-	ctx, span := internal.StartSpan(ctx, "GetBlock", trace.WithAttributes(attribute.String("Key", k.String())))
-	defer span.End()
+
 	return bsgetter.SyncGetBlock(ctx, k, bs.GetBlocks)
 }
 
@@ -277,8 +273,7 @@ func (bs *Client) GetBlock(ctx context.Context, k cid.Cid) (blocks.Block, error)
 // resources, provide a context with a reasonably short deadline (ie. not one
 // that lasts throughout the lifetime of the server)
 func (bs *Client) GetBlocks(ctx context.Context, keys []cid.Cid) (<-chan blocks.Block, error) {
-	ctx, span := internal.StartSpan(ctx, "GetBlocks", trace.WithAttributes(attribute.Int("NumKeys", len(keys))))
-	defer span.End()
+
 	session := bs.sm.NewSession(ctx, bs.provSearchDelay, bs.rebroadcastDelay)
 	return session.GetBlocks(ctx, keys)
 }
@@ -287,8 +282,6 @@ func (bs *Client) GetBlocks(ctx context.Context, keys []cid.Cid) (<-chan blocks.
 // Bitswap itself doesn't store new blocks. It's the caller responsibility to ensure
 // that those blocks are available in the blockstore before calling this function.
 func (bs *Client) NotifyNewBlocks(ctx context.Context, blks ...blocks.Block) error {
-	ctx, span := internal.StartSpan(ctx, "NotifyNewBlocks")
-	defer span.End()
 
 	select {
 	case <-bs.process.Closing():
@@ -501,7 +494,6 @@ func (bs *Client) IsOnline() bool {
 // be more efficient in its requests to peers. If you are using a session
 // from go-blockservice, it will create a bitswap session automatically.
 func (bs *Client) NewSession(ctx context.Context) exchange.Fetcher {
-	ctx, span := internal.StartSpan(ctx, "NewSession")
-	defer span.End()
+
 	return bs.sm.NewSession(ctx, bs.provSearchDelay, bs.rebroadcastDelay)
 }

@@ -13,8 +13,6 @@ import (
 	"github.com/ipfs/go-cid"
 	dns "github.com/miekg/dns"
 	"github.com/samber/lo"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 // LookupTXTFunc is a function that lookups TXT record values.
@@ -33,22 +31,16 @@ func NewDNSResolver(lookup LookupTXTFunc) *DNSResolver {
 }
 
 func (r *DNSResolver) Resolve(ctx context.Context, p path.Path, options ...ResolveOption) (Result, error) {
-	ctx, span := startSpan(ctx, "DNSResolver.Resolve", trace.WithAttributes(attribute.Stringer("Path", p)))
-	defer span.End()
 
 	return resolve(ctx, r, p, ProcessResolveOptions(options))
 }
 
 func (r *DNSResolver) ResolveAsync(ctx context.Context, p path.Path, options ...ResolveOption) <-chan AsyncResult {
-	ctx, span := startSpan(ctx, "DNSResolver.ResolveAsync", trace.WithAttributes(attribute.Stringer("Path", p)))
-	defer span.End()
 
 	return resolveAsync(ctx, r, p, ProcessResolveOptions(options))
 }
 
 func (r *DNSResolver) resolveOnceAsync(ctx context.Context, p path.Path, options ResolveOptions) <-chan AsyncResult {
-	ctx, span := startSpan(ctx, "DNSResolver.ResolveOnceAsync", trace.WithAttributes(attribute.Stringer("Path", p)))
-	defer span.End()
 
 	out := make(chan AsyncResult, 1)
 	if p.Namespace() != path.IPNSNamespace {
@@ -75,8 +67,6 @@ func (r *DNSResolver) resolveOnceAsync(ctx context.Context, p path.Path, options
 
 	go func() {
 		defer close(out)
-		ctx, span := startSpan(ctx, "DNSResolver.ResolveOnceAsync.Worker")
-		defer span.End()
 
 		select {
 		case subRes, ok := <-resChan:
@@ -102,8 +92,6 @@ func (r *DNSResolver) resolveOnceAsync(ctx context.Context, p path.Path, options
 }
 
 func workDomain(ctx context.Context, r *DNSResolver, name string, res chan AsyncResult) {
-	ctx, span := startSpan(ctx, "DNSResolver.WorkDomain", trace.WithAttributes(attribute.String("Name", name)))
-	defer span.End()
 
 	defer close(res)
 

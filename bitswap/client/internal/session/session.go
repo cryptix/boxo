@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/ipfs/boxo/bitswap/client/internal"
 	bsbpm "github.com/ipfs/boxo/bitswap/client/internal/blockpresencemanager"
 	bsgetter "github.com/ipfs/boxo/bitswap/client/internal/getter"
 	notifications "github.com/ipfs/boxo/bitswap/client/internal/notifications"
@@ -229,8 +228,7 @@ func (s *Session) logReceiveFrom(from peer.ID, interestedKs []cid.Cid, haves []c
 
 // GetBlock fetches a single block.
 func (s *Session) GetBlock(ctx context.Context, k cid.Cid) (blocks.Block, error) {
-	ctx, span := internal.StartSpan(ctx, "Session.GetBlock")
-	defer span.End()
+
 	return bsgetter.SyncGetBlock(ctx, k, s.GetBlocks)
 }
 
@@ -238,8 +236,6 @@ func (s *Session) GetBlock(ctx context.Context, k cid.Cid) (blocks.Block, error)
 // returns a channel that found blocks will be returned on. No order is
 // guaranteed on the returned blocks.
 func (s *Session) GetBlocks(ctx context.Context, keys []cid.Cid) (<-chan blocks.Block, error) {
-	ctx, span := internal.StartSpan(ctx, "Session.GetBlocks")
-	defer span.End()
 
 	return bsgetter.AsyncGetBlocks(ctx, s.ctx, keys, s.notif,
 		func(ctx context.Context, keys []cid.Cid) {

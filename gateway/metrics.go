@@ -9,9 +9,6 @@ import (
 	"github.com/ipfs/boxo/path"
 	"github.com/ipfs/go-cid"
 	prometheus "github.com/prometheus/client_golang/prometheus"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 // Duration histograms measure things like API call execution, how long returning specific
@@ -62,8 +59,6 @@ func (b *ipfsBackendWithMetrics) updateBackendCallMetric(name string, err error,
 func (b *ipfsBackendWithMetrics) Get(ctx context.Context, path path.ImmutablePath, ranges ...ByteRange) (ContentPathMetadata, *GetResponse, error) {
 	begin := time.Now()
 	name := "IPFSBackend.Get"
-	ctx, span := spanTrace(ctx, name, trace.WithAttributes(attribute.String("path", path.String()), attribute.Int("ranges", len(ranges))))
-	defer span.End()
 
 	md, f, err := b.backend.Get(ctx, path, ranges...)
 
@@ -74,8 +69,6 @@ func (b *ipfsBackendWithMetrics) Get(ctx context.Context, path path.ImmutablePat
 func (b *ipfsBackendWithMetrics) GetAll(ctx context.Context, path path.ImmutablePath) (ContentPathMetadata, files.Node, error) {
 	begin := time.Now()
 	name := "IPFSBackend.GetAll"
-	ctx, span := spanTrace(ctx, name, trace.WithAttributes(attribute.String("path", path.String())))
-	defer span.End()
 
 	md, n, err := b.backend.GetAll(ctx, path)
 
@@ -86,8 +79,6 @@ func (b *ipfsBackendWithMetrics) GetAll(ctx context.Context, path path.Immutable
 func (b *ipfsBackendWithMetrics) GetBlock(ctx context.Context, path path.ImmutablePath) (ContentPathMetadata, files.File, error) {
 	begin := time.Now()
 	name := "IPFSBackend.GetBlock"
-	ctx, span := spanTrace(ctx, name, trace.WithAttributes(attribute.String("path", path.String())))
-	defer span.End()
 
 	md, n, err := b.backend.GetBlock(ctx, path)
 
@@ -98,8 +89,6 @@ func (b *ipfsBackendWithMetrics) GetBlock(ctx context.Context, path path.Immutab
 func (b *ipfsBackendWithMetrics) Head(ctx context.Context, path path.ImmutablePath) (ContentPathMetadata, *HeadResponse, error) {
 	begin := time.Now()
 	name := "IPFSBackend.Head"
-	ctx, span := spanTrace(ctx, name, trace.WithAttributes(attribute.String("path", path.String())))
-	defer span.End()
 
 	md, n, err := b.backend.Head(ctx, path)
 
@@ -110,8 +99,6 @@ func (b *ipfsBackendWithMetrics) Head(ctx context.Context, path path.ImmutablePa
 func (b *ipfsBackendWithMetrics) ResolvePath(ctx context.Context, path path.ImmutablePath) (ContentPathMetadata, error) {
 	begin := time.Now()
 	name := "IPFSBackend.ResolvePath"
-	ctx, span := spanTrace(ctx, name, trace.WithAttributes(attribute.String("path", path.String())))
-	defer span.End()
 
 	md, err := b.backend.ResolvePath(ctx, path)
 
@@ -122,8 +109,6 @@ func (b *ipfsBackendWithMetrics) ResolvePath(ctx context.Context, path path.Immu
 func (b *ipfsBackendWithMetrics) GetCAR(ctx context.Context, path path.ImmutablePath, params CarParams) (ContentPathMetadata, io.ReadCloser, error) {
 	begin := time.Now()
 	name := "IPFSBackend.GetCAR"
-	ctx, span := spanTrace(ctx, name, trace.WithAttributes(attribute.String("path", path.String())))
-	defer span.End()
 
 	md, rc, err := b.backend.GetCAR(ctx, path, params)
 	b.updateBackendCallMetric(name, err, begin)
@@ -133,8 +118,6 @@ func (b *ipfsBackendWithMetrics) GetCAR(ctx context.Context, path path.Immutable
 func (b *ipfsBackendWithMetrics) IsCached(ctx context.Context, path path.Path) bool {
 	begin := time.Now()
 	name := "IPFSBackend.IsCached"
-	ctx, span := spanTrace(ctx, name, trace.WithAttributes(attribute.String("path", path.String())))
-	defer span.End()
 
 	bln := b.backend.IsCached(ctx, path)
 
@@ -145,8 +128,6 @@ func (b *ipfsBackendWithMetrics) IsCached(ctx context.Context, path path.Path) b
 func (b *ipfsBackendWithMetrics) GetIPNSRecord(ctx context.Context, cid cid.Cid) ([]byte, error) {
 	begin := time.Now()
 	name := "IPFSBackend.GetIPNSRecord"
-	ctx, span := spanTrace(ctx, name, trace.WithAttributes(attribute.String("cid", cid.String())))
-	defer span.End()
 
 	r, err := b.backend.GetIPNSRecord(ctx, cid)
 
@@ -157,8 +138,6 @@ func (b *ipfsBackendWithMetrics) GetIPNSRecord(ctx context.Context, cid cid.Cid)
 func (b *ipfsBackendWithMetrics) ResolveMutable(ctx context.Context, path path.Path) (path.ImmutablePath, time.Duration, time.Time, error) {
 	begin := time.Now()
 	name := "IPFSBackend.ResolveMutable"
-	ctx, span := spanTrace(ctx, name, trace.WithAttributes(attribute.String("path", path.String())))
-	defer span.End()
 
 	p, ttl, lastMod, err := b.backend.ResolveMutable(ctx, path)
 
@@ -169,8 +148,6 @@ func (b *ipfsBackendWithMetrics) ResolveMutable(ctx context.Context, path path.P
 func (b *ipfsBackendWithMetrics) GetDNSLinkRecord(ctx context.Context, fqdn string) (path.Path, error) {
 	begin := time.Now()
 	name := "IPFSBackend.GetDNSLinkRecord"
-	ctx, span := spanTrace(ctx, name, trace.WithAttributes(attribute.String("fqdn", fqdn)))
-	defer span.End()
 
 	p, err := b.backend.GetDNSLinkRecord(ctx, fqdn)
 
@@ -300,10 +277,4 @@ func newHistogramMetric(name string, help string) *prometheus.HistogramVec {
 		}
 	}
 	return histogramMetric
-}
-
-var tracer = otel.Tracer("boxo/gateway")
-
-func spanTrace(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
-	return tracer.Start(ctx, "Gateway."+spanName, opts...)
 }

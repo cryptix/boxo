@@ -5,8 +5,6 @@ import (
 	"strings"
 
 	"github.com/ipfs/boxo/path"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type resolver interface {
@@ -32,8 +30,6 @@ func resolve(ctx context.Context, r resolver, p path.Path, options ResolveOption
 }
 
 func resolveAsync(ctx context.Context, r resolver, p path.Path, options ResolveOptions) <-chan AsyncResult {
-	ctx, span := startSpan(ctx, "ResolveAsync")
-	defer span.End()
 
 	resCh := r.resolveOnceAsync(ctx, p, options)
 	depth := options.Depth
@@ -41,8 +37,6 @@ func resolveAsync(ctx context.Context, r resolver, p path.Path, options ResolveO
 
 	go func() {
 		defer close(outCh)
-		ctx, span := startSpan(ctx, "ResolveAsync.Worker")
-		defer span.End()
 
 		var subCh <-chan AsyncResult
 		var cancelSub context.CancelFunc
@@ -136,10 +130,4 @@ func joinPaths(resolvedBase, unresolvedPath path.Path) (path.Path, error) {
 	}
 
 	return path.Join(resolvedBase, segments...)
-}
-
-var tracer = otel.Tracer("boxo/namesys")
-
-func startSpan(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
-	return tracer.Start(ctx, "Namesys."+name)
 }

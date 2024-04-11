@@ -15,16 +15,12 @@ import (
 	"github.com/ipfs/boxo/gateway/assets"
 	"github.com/ipfs/boxo/path"
 	cid "github.com/ipfs/go-cid"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 // serveDirectory returns the best representation of UnixFS directory
 //
 // It will return index.html if present, or generate directory listing otherwise.
 func (i *handler) serveDirectory(ctx context.Context, w http.ResponseWriter, r *http.Request, resolvedPath path.ImmutablePath, rq *requestData, isHeadRequest bool, directoryMetadata *directoryMetadata, ranges []ByteRange) bool {
-	ctx, span := spanTrace(ctx, "Handler.ServeDirectory", trace.WithAttributes(attribute.String("path", resolvedPath.String())))
-	defer span.End()
 
 	// WithHostname might have constructed an IPNS/IPFS path using the Host header.
 	// In this case, we need the original path for constructing redirects and links

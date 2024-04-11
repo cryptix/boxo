@@ -10,8 +10,6 @@ import (
 
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/routing"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 // IPNSResolver implements [Resolver] for IPNS Records. This resolver always returns
@@ -38,22 +36,16 @@ func NewIPNSResolver(route routing.ValueStore) *IPNSResolver {
 }
 
 func (r *IPNSResolver) Resolve(ctx context.Context, p path.Path, options ...ResolveOption) (Result, error) {
-	ctx, span := startSpan(ctx, "IPNSResolver.Resolve", trace.WithAttributes(attribute.Stringer("Path", p)))
-	defer span.End()
 
 	return resolve(ctx, r, p, ProcessResolveOptions(options))
 }
 
 func (r *IPNSResolver) ResolveAsync(ctx context.Context, p path.Path, options ...ResolveOption) <-chan AsyncResult {
-	ctx, span := startSpan(ctx, "IPNSResolver.ResolveAsync", trace.WithAttributes(attribute.Stringer("Path", p)))
-	defer span.End()
 
 	return resolveAsync(ctx, r, p, ProcessResolveOptions(options))
 }
 
 func (r *IPNSResolver) resolveOnceAsync(ctx context.Context, p path.Path, options ResolveOptions) <-chan AsyncResult {
-	ctx, span := startSpan(ctx, "IPNSResolver.ResolveOnceAsync", trace.WithAttributes(attribute.Stringer("Path", p)))
-	defer span.End()
 
 	out := make(chan AsyncResult, 1)
 	if p.Namespace() != path.IPNSNamespace {
@@ -87,8 +79,6 @@ func (r *IPNSResolver) resolveOnceAsync(ctx context.Context, p path.Path, option
 	go func() {
 		defer cancel()
 		defer close(out)
-		ctx, span := startSpan(ctx, "IPNSResolver.ResolveOnceAsync.Worker")
-		defer span.End()
 
 		for {
 			select {

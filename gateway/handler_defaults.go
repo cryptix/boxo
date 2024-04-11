@@ -11,14 +11,9 @@ import (
 	"strings"
 
 	mc "github.com/multiformats/go-multicodec"
-
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 func (i *handler) serveDefaults(ctx context.Context, w http.ResponseWriter, r *http.Request, rq *requestData) bool {
-	ctx, span := spanTrace(ctx, "Handler.ServeDefaults", trace.WithAttributes(attribute.String("path", rq.contentPath.String())))
-	defer span.End()
 
 	var (
 		pathMetadata ContentPathMetadata
@@ -115,8 +110,6 @@ func (i *handler) serveDefaults(ctx context.Context, w http.ResponseWriter, r *h
 		return i.renderCodec(r.Context(), w, r, rq, blockSize, dataToRender)
 	default:
 		rq.logger.Debugw("serving unixfs", "path", rq.contentPath)
-		ctx, span := spanTrace(ctx, "Handler.ServeUnixFS", trace.WithAttributes(attribute.String("path", resolvedPath.String())))
-		defer span.End()
 
 		// Handle UnixFS HEAD requests
 		if headResp != nil {

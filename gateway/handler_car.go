@@ -15,8 +15,6 @@ import (
 	"github.com/ipfs/boxo/path"
 	"github.com/ipfs/go-cid"
 
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 )
 
@@ -27,8 +25,6 @@ const (
 
 // serveCAR returns a CAR stream for specific DAG+selector
 func (i *handler) serveCAR(ctx context.Context, w http.ResponseWriter, r *http.Request, rq *requestData) bool {
-	ctx, span := spanTrace(ctx, "Handler.ServeCAR", trace.WithAttributes(attribute.String("path", rq.immutablePath.String())))
-	defer span.End()
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()

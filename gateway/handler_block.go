@@ -4,15 +4,10 @@ import (
 	"context"
 	"net/http"
 	"time"
-
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 // serveRawBlock returns bytes behind a raw block
 func (i *handler) serveRawBlock(ctx context.Context, w http.ResponseWriter, r *http.Request, rq *requestData) bool {
-	ctx, span := spanTrace(ctx, "Handler.ServeRawBlock", trace.WithAttributes(attribute.String("path", rq.immutablePath.String())))
-	defer span.End()
 
 	pathMetadata, data, err := i.backend.GetBlock(ctx, rq.mostlyResolvedPath())
 	if !i.handleRequestErrors(w, r, rq.contentPath, err) {

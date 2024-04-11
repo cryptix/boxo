@@ -30,8 +30,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/routing"
 	"github.com/miekg/dns"
 	madns "github.com/multiformats/go-multiaddr-dns"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 )
 
@@ -154,23 +152,17 @@ func NewNameSystem(r routing.ValueStore, opts ...Option) (NameSystem, error) {
 
 // Resolve implements Resolver.
 func (ns *namesys) Resolve(ctx context.Context, p path.Path, options ...ResolveOption) (Result, error) {
-	ctx, span := startSpan(ctx, "namesys.Resolve", trace.WithAttributes(attribute.Stringer("Path", p)))
-	defer span.End()
 
 	return resolve(ctx, ns, p, ProcessResolveOptions(options))
 }
 
 func (ns *namesys) ResolveAsync(ctx context.Context, p path.Path, options ...ResolveOption) <-chan AsyncResult {
-	ctx, span := startSpan(ctx, "namesys.ResolveAsync", trace.WithAttributes(attribute.Stringer("Path", p)))
-	defer span.End()
 
 	return resolveAsync(ctx, ns, p, ProcessResolveOptions(options))
 }
 
 // resolveOnce implements resolver.
 func (ns *namesys) resolveOnceAsync(ctx context.Context, p path.Path, options ResolveOptions) <-chan AsyncResult {
-	ctx, span := startSpan(ctx, "namesys.ResolveOnceAsync", trace.WithAttributes(attribute.Stringer("Path", p)))
-	defer span.End()
 
 	out := make(chan AsyncResult, 1)
 	if !p.Mutable() {
@@ -189,13 +181,12 @@ func (ns *namesys) resolveOnceAsync(ctx context.Context, p path.Path, options Re
 
 	if resolvedBase, ttl, lastMod, ok := ns.cacheGet(resolvablePath.String()); ok {
 		p, err = joinPaths(resolvedBase, p)
-		span.SetAttributes(attribute.Bool("CacheHit", true))
-		span.RecordError(err)
+
 		out <- AsyncResult{Path: p, TTL: ttl, LastMod: lastMod, Err: err}
 		close(out)
 		return out
 	} else {
-		span.SetAttributes(attribute.Bool("CacheHit", false))
+
 	}
 
 	// Resolver selection:
@@ -267,8 +258,6 @@ func emitOnceResult(ctx context.Context, outCh chan<- AsyncResult, r AsyncResult
 
 // Publish implements Publisher
 func (ns *namesys) Publish(ctx context.Context, name ci.PrivKey, value path.Path, options ...PublishOption) error {
-	ctx, span := startSpan(ctx, "namesys.Publish")
-	defer span.End()
 
 	// This is a bit hacky. We do this because the EOL is based on the current
 	// time, but also needed in the end of the function. Therefore, we parse
@@ -279,19 +268,18 @@ func (ns *namesys) Publish(ctx context.Context, name ci.PrivKey, value path.Path
 
 	pid, err := peer.IDFromPrivateKey(name)
 	if err != nil {
-		span.RecordError(err)
+
 		return err
 	}
 
 	ipnsName := ipns.NameFromPeer(pid)
 	cacheKey := ipnsName.String()
 
-	span.SetAttributes(attribute.String("ID", pid.String()))
 	if err := ns.ipnsPublisher.Publish(ctx, name, value, options...); err != nil {
 		// Invalidate the cache. Publishing may _partially_ succeed but
 		// still return an error.
 		ns.cacheInvalidate(cacheKey)
-		span.RecordError(err)
+
 		return err
 	}
 
@@ -310,8 +298,6 @@ func (ns *namesys) Publish(ctx context.Context, name ci.PrivKey, value path.Path
 // returns the result of [NameSystem.Resolve] for the given path. If the given namesys
 // is nil, [ErrNoNamesys] is returned.
 func Resolve(ctx context.Context, ns NameSystem, p path.Path) (Result, error) {
-	ctx, span := startSpan(ctx, "Resolve", trace.WithAttributes(attribute.Stringer("Path", p)))
-	defer span.End()
 
 	if ns == nil {
 		return Result{}, ErrNoNamesys

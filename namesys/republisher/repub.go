@@ -9,9 +9,6 @@ import (
 
 	"github.com/ipfs/boxo/keystore"
 	"github.com/ipfs/boxo/namesys"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/ipfs/boxo/ipns"
 	ds "github.com/ipfs/go-datastore"
@@ -95,8 +92,6 @@ func (rp *Republisher) Run(proc goprocess.Process) {
 func (rp *Republisher) republishEntries(p goprocess.Process) error {
 	ctx, cancel := context.WithCancel(gpctx.OnClosingContext(p))
 	defer cancel()
-	ctx, span := startSpan(ctx, "Republisher.RepublishEntries")
-	defer span.End()
 
 	// TODO: Use rp.ipns.ListPublished(). We can't currently *do* that
 	// because:
@@ -129,11 +124,10 @@ func (rp *Republisher) republishEntries(p goprocess.Process) error {
 }
 
 func (rp *Republisher) republishEntry(ctx context.Context, priv ic.PrivKey) error {
-	ctx, span := startSpan(ctx, "Republisher.RepublishEntry")
-	defer span.End()
+
 	id, err := peer.IDFromPrivateKey(priv)
 	if err != nil {
-		span.RecordError(err)
+
 		return err
 	}
 
@@ -143,22 +137,22 @@ func (rp *Republisher) republishEntry(ctx context.Context, priv ic.PrivKey) erro
 	rec, err := rp.getLastIPNSRecord(ctx, ipns.NameFromPeer(id))
 	if err != nil {
 		if err == errNoEntry {
-			span.SetAttributes(attribute.Bool("NoEntry", true))
+
 			return nil
 		}
-		span.RecordError(err)
+
 		return err
 	}
 
 	p, err := rec.Value()
 	if err != nil {
-		span.RecordError(err)
+
 		return err
 	}
 
 	prevEol, err := rec.Validity()
 	if err != nil {
-		span.RecordError(err)
+
 		return err
 	}
 
@@ -168,7 +162,7 @@ func (rp *Republisher) republishEntry(ctx context.Context, priv ic.PrivKey) erro
 		eol = prevEol
 	}
 	err = rp.ns.Publish(ctx, priv, p, namesys.PublishWithEOL(eol))
-	span.RecordError(err)
+
 	return err
 }
 
@@ -184,10 +178,4 @@ func (rp *Republisher) getLastIPNSRecord(ctx context.Context, name ipns.Name) (*
 	}
 
 	return ipns.UnmarshalRecord(val)
-}
-
-var tracer = otel.Tracer("boxo/namesys/republisher")
-
-func startSpan(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
-	return tracer.Start(ctx, "Namesys."+name)
 }

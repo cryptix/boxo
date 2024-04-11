@@ -24,8 +24,6 @@ import (
 	"github.com/multiformats/go-multibase"
 	mc "github.com/multiformats/go-multicodec"
 	prometheus "github.com/prometheus/client_golang/prometheus"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -239,7 +237,6 @@ func (i *handler) getOrHeadHandler(w http.ResponseWriter, r *http.Request) {
 		i.webError(w, r, fmt.Errorf("error while processing the Accept header: %w", err), http.StatusBadRequest)
 		return
 	}
-	trace.SpanFromContext(r.Context()).SetAttributes(attribute.String("ResponseFormat", responseFormat))
 	i.requestTypeMetric.WithLabelValues(contentPath.Namespace(), responseFormat).Inc()
 
 	w.Header().Set("X-Ipfs-Path", contentPath.String())

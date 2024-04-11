@@ -6,7 +6,6 @@ import (
 
 	"github.com/ipfs/boxo/blockservice"
 	"github.com/ipfs/boxo/exchange/offline"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 // TODO: make this configurable via BlocksBackendOption
@@ -48,6 +47,6 @@ func newRemoteHTTPClient() *http.Client {
 
 	return &http.Client{
 		Timeout:   getBlockTimeout,
-		Transport: otelhttp.NewTransport(transport),
+		Transport: transport,
 	}
 }

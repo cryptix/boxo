@@ -7,15 +7,11 @@ import (
 	"time"
 
 	"github.com/ipfs/boxo/files"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 var unixEpochTime = time.Unix(0, 0)
 
 func (i *handler) serveTAR(ctx context.Context, w http.ResponseWriter, r *http.Request, rq *requestData) bool {
-	ctx, span := spanTrace(ctx, "Handler.ServeTAR", trace.WithAttributes(attribute.String("path", rq.immutablePath.String())))
-	defer span.End()
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
